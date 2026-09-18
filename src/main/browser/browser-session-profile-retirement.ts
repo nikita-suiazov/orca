@@ -38,7 +38,12 @@ export async function retireDeletedBrowserSessionProfilePartition(
   try {
     const sess = session.fromPartition(partition)
     forgetBrowserSessionPartitionConfiguration(partition)
-    await unloadBrowserSessionExtensions(partition)
+    try {
+      await unloadBrowserSessionExtensions(partition)
+    } catch {
+      // Best-effort: a failed unload must not skip the storage and proxy cleanup below.
+      console.warn('[browser-extensions] Failed to unload extensions for', partition)
+    }
     retireBrowserSessionUserAgentPolicy(sess)
     invalidateBrowserSessionProxyApplication(sess)
     const release = retireProxySessionApplication(sess)
