@@ -39,6 +39,7 @@ type RuntimeTypeInventory = [
   Runtime.BrowserProfileClearDefaultCookiesResult,
   Runtime.BrowserProfileCreateResult,
   Runtime.BrowserProfileDeleteResult,
+  Runtime.BrowserProfileExtensionsResult,
   Runtime.BrowserProfileImportFromBrowserResult,
   Runtime.BrowserProfileListResult,
   Runtime.BrowserReloadResult,
