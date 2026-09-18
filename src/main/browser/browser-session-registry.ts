@@ -22,11 +22,7 @@ import {
   persistBrowserSessionMeta
 } from './browser-session-meta-store'
 import type { BrowserSessionMeta } from './browser-session-meta-store'
-import {
-  forgetBrowserSessionPartitionConfiguration,
-  installBrowserSessionPartitionPolicies,
-  retireBrowserSessionUserAgentPolicy
-} from './browser-session-partition-policies'
+import { installBrowserSessionPartitionPolicies } from './browser-session-partition-policies'
 import {
   isValidPersistedBrowserSessionProfile,
   inspectRetiredBrowserSessionProfileUserAgentModes
@@ -35,10 +31,10 @@ import {
   clearBrowserRoutePartitionPolicies,
   installBrowserRoutePartitionPolicies
 } from './browser-session-route-policies'
-import { retireProxySessionApplication } from '../network/proxy-settings'
-import { invalidateBrowserSessionProxyApplication } from './browser-session-proxy'
-import { retireFailedBrowserSessionProfile } from './browser-session-profile-retirement'
-import { cancelBrowserWebAuthnAccountRequestsForSession } from './browser-webauthn-account-picker'
+import {
+  retireDeletedBrowserSessionProfilePartition,
+  retireFailedBrowserSessionProfile
+} from './browser-session-profile-retirement'
 import { getCanonicalUserDataPath } from '../persistence/loading-store/user-data-path'
 import { markBrowserIdentityMigrationNoticePending } from './browser-identity-mode-store'
 
@@ -68,13 +64,14 @@ class BrowserSessionRegistry {
   }
 
   private resetDefaultProfile(): void {
-    const persisted = this.loadPersistedSource()
+    const persisted = this.loadPersistedMeta()
     this.profiles.set('default', {
       id: 'default',
       scope: 'default',
       partition: this.defaultPartition,
       label: 'Default',
-      source: persisted
+      source: persisted.defaultSource,
+      extensions: persisted.defaultExtensions
     })
   }
 
@@ -85,16 +82,8 @@ class BrowserSessionRegistry {
     )
   }
 
-  private loadPersistedSource(): BrowserSessionProfile['source'] {
-    return this.loadPersistedMeta().defaultSource
-  }
-
   private persistMeta(updates: Partial<BrowserSessionMeta>): void {
     persistBrowserSessionMeta(() => this.metadataPath, this.defaultPartition, updates)
-  }
-
-  private persistSource(source: BrowserSessionProfile['source']): void {
-    this.persistMeta({ defaultSource: source })
   }
 
   // Why: non-default profiles are in-memory only; without this they vanish on restart.
@@ -122,11 +111,13 @@ class BrowserSessionRegistry {
         migration.degraded
       ).catch((error) => console.error('[browser-identity] Migration notice failed:', error))
     }
-    if (meta.defaultSource) {
-      const current = this.profiles.get('default')
-      if (current && current.source === null) {
-        this.profiles.set('default', { ...current, source: meta.defaultSource })
-      }
+    const current = this.profiles.get('default')
+    if (current) {
+      this.profiles.set('default', {
+        ...current,
+        source: current.source ?? meta.defaultSource,
+        extensions: current.extensions ?? meta.defaultExtensions
+      })
     }
     if (meta.profiles.length > 0) {
       this.hydrateFromPersisted(meta.profiles)
@@ -134,7 +125,9 @@ class BrowserSessionRegistry {
 
     // Why: nothing else installs policies on the default partition (hydrate skips it), so without this its guest permissions would be denied.
     const defaultProfile = this.getDefaultProfile()
-    void installBrowserSessionPartitionPolicies(defaultProfile).catch(() => {
+    void installBrowserSessionPartitionPolicies(defaultProfile, {
+      extensions: defaultProfile.extensions
+    }).catch(() => {
       console.warn('[proxy] Failed to apply proxy to browser partition', defaultProfile.partition)
     })
   }
@@ -247,22 +240,31 @@ class BrowserSessionRegistry {
     return profile
   }
 
-  updateProfileSource(
+  // Why one writer: the default profile persists into two top-level meta fields while every other
+  // profile persists inside `profiles`, and that split is easy to get wrong per call site.
+  updateProfile(
     profileId: string,
-    source: BrowserSessionProfile['source']
+    patch: Partial<BrowserSessionProfile>
   ): BrowserSessionProfile | null {
     const profile = this.profiles.get(profileId)
     if (!profile) {
       return null
     }
-    const updated = { ...profile, source }
+    const updated = { ...profile, ...patch }
     this.profiles.set(profileId, updated)
     if (profileId === 'default') {
-      this.persistSource(source)
+      this.persistMeta({ defaultSource: updated.source, defaultExtensions: updated.extensions })
     } else {
       this.persistProfiles()
     }
     return updated
+  }
+
+  updateProfileSource(
+    profileId: string,
+    source: BrowserSessionProfile['source']
+  ): BrowserSessionProfile | null {
+    return this.updateProfile(profileId, { source })
   }
 
   async deleteProfile(profileId: string): Promise<boolean> {
@@ -281,25 +283,7 @@ class BrowserSessionRegistry {
       pendingCookieDbPath: typeof defaultPendingImport === 'string' ? defaultPendingImport : null
     })
 
-    // Why: clear the partition's storage so deleting a profile doesn't leave orphaned cookies/cache behind.
-    try {
-      const sess = session.fromPartition(profile.partition)
-      forgetBrowserSessionPartitionConfiguration(profile.partition)
-      retireBrowserSessionUserAgentPolicy(sess)
-      invalidateBrowserSessionProxyApplication(sess)
-      const release = retireProxySessionApplication(sess)
-      // Why: persistent partitions can retain service workers after every WebContents dies, so a retired session's deny policies must remain permanent.
-      cancelBrowserWebAuthnAccountRequestsForSession(sess)
-      try {
-        await release
-      } catch {
-        console.warn('[proxy] Failed to release proxy from browser partition', profile.partition)
-      }
-      await sess.clearStorageData()
-      await sess.clearCache()
-    } catch {
-      // Why: cleanup is best-effort — the profile is already out of the registry, so will-attach-webview blocks it regardless.
-    }
+    await retireDeletedBrowserSessionProfilePartition(profile.partition)
     return true
   }
 
@@ -335,7 +319,9 @@ class BrowserSessionRegistry {
       }
       this.profiles.set(profile.id, profile)
       if (profile.partition !== this.defaultPartition) {
-        void installBrowserSessionPartitionPolicies(profile).catch(() => {
+        void installBrowserSessionPartitionPolicies(profile, {
+          extensions: profile.extensions
+        }).catch(() => {
           console.warn('[proxy] Failed to apply proxy to browser partition', profile.partition)
         })
       }

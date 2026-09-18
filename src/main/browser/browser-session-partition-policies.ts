@@ -17,6 +17,7 @@ import {
   installBrowserWebAuthnAccessHandlers
 } from './browser-webauthn-access'
 import { noticeDocPreviewDownloadBlocked } from './doc-preview-download-block-notice'
+import { applyBrowserSessionExtensions } from './browser-session-extensions'
 
 // Why: one shared installer keeps every partition's deny-by-default permission/download policies from drifting apart.
 const configuredPartitions = new Set<string>()
@@ -107,11 +108,21 @@ export async function installBrowserSessionPartitionPolicies(
     permissions?: BrowserPartitionPermissionPolicy
     applyAppWideProxy?: boolean
     userAgentExceptions?: boolean
+    extensions?: readonly string[]
   } = {}
 ): Promise<void> {
   const { partition } = profile
   const sess = session.fromPartition(partition)
   configureBrowserSessionUserAgentPolicy(sess, options.userAgentExceptions !== false)
+  // Why here and before the configured-partition guard: this is the one installer every profile
+  // partition passes through on startup, hydrate and create, and Electron forgets extensions on
+  // every boot. Route and preview partitions pass no `extensions`, so they stay extension-free
+  // without a scope test. Detached because one unloadable extension must not fail the profile.
+  if (options.extensions !== undefined && options.extensions.length > 0) {
+    void applyBrowserSessionExtensions(partition, options.extensions).catch((error: unknown) => {
+      console.warn('[browser-extensions] Failed to load extensions for', partition, error)
+    })
+  }
   // Why: route partitions own a SOCKS transport policy that the app proxy must not overwrite.
   const proxyReady = (
     options.applyAppWideProxy === false ? Promise.resolve() : applyProxyToBrowserSession(sess)

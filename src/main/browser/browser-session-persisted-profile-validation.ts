@@ -1,5 +1,8 @@
+import { isAbsolute } from 'node:path'
 import { getOrcaProfileBrowserSessionPartition } from '../../shared/orca-profiles'
 import type { BrowserSessionProfile } from '../../shared/browser-workspace-types'
+
+export const MAX_BROWSER_SESSION_EXTENSIONS = 16
 
 const BROWSER_SESSION_PROFILE_ID_RE =
   /^[\da-f-]{8}-[\da-f-]{4}-[\da-f-]{4}-[\da-f-]{4}-[\da-f-]{12}$/
@@ -25,6 +28,27 @@ export function isValidPersistedBrowserSessionProfile(
     typeof candidate.label === 'string' &&
     isProfileOwnedSessionPartition(candidate.id, candidate.partition, activeOrcaProfileId)
   )
+}
+
+// Why absolute-only, deduped and bounded: these directories go straight to Electron's extension
+// loader, so a tampered meta file must not be able to point a partition at an arbitrary tree or
+// grow the boot-time load list without limit. An unusable field is dropped, not the whole profile.
+export function sanitizePersistedBrowserSessionExtensions(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined
+  }
+  const directories = [
+    ...new Set(
+      value.filter(
+        (entry): entry is string =>
+          typeof entry === 'string' &&
+          entry.length > 0 &&
+          !entry.includes('\0') &&
+          isAbsolute(entry)
+      )
+    )
+  ]
+  return directories.length > 0 ? directories.slice(0, MAX_BROWSER_SESSION_EXTENSIONS) : undefined
 }
 
 export function inspectRetiredBrowserSessionProfileUserAgentModes(

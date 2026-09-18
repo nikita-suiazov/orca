@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import type { BrowserSessionProfile } from '../../shared/browser-workspace-types'
+import { sanitizePersistedBrowserSessionExtensions } from './browser-session-persisted-profile-validation'
 
 export type PendingBrowserCookieImport =
   | string
@@ -21,9 +22,29 @@ export type PendingBrowserCookieImport =
 // start stripping it. See inspectRetiredBrowserSessionProfileUserAgentModes.
 export type BrowserSessionMeta = {
   defaultSource: BrowserSessionProfile['source']
+  // Why a top-level field: the default profile is never written into `profiles`, so its own
+  // extension list has nowhere else to live.
+  defaultExtensions: string[] | undefined
   pendingCookieDbPath: string | null
   pendingCookieImports: Record<string, PendingBrowserCookieImport>
   profiles: BrowserSessionProfile[]
+}
+
+// Extension directories are read back off disk unverified, so every load is sanitized here.
+function readPersistedProfiles(value: unknown): BrowserSessionProfile[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return value.map((profile) =>
+    profile && typeof profile === 'object'
+      ? {
+          ...(profile as BrowserSessionProfile),
+          extensions: sanitizePersistedBrowserSessionExtensions(
+            (profile as BrowserSessionProfile).extensions
+          )
+        }
+      : (profile as BrowserSessionProfile)
+  )
 }
 
 export const BROWSER_SESSION_META_FILE_NAME = 'browser-session-meta.json'
@@ -57,13 +78,15 @@ export function loadBrowserSessionMeta(
     }
     return {
       defaultSource: data?.defaultSource ?? null,
+      defaultExtensions: sanitizePersistedBrowserSessionExtensions(data?.defaultExtensions),
       pendingCookieDbPath: legacyPendingCookieDbPath,
       pendingCookieImports,
-      profiles: Array.isArray(data?.profiles) ? data.profiles : []
+      profiles: readPersistedProfiles(data?.profiles)
     }
   } catch {
     return {
       defaultSource: null,
+      defaultExtensions: undefined,
       pendingCookieDbPath: null,
       pendingCookieImports: {},
       profiles: []

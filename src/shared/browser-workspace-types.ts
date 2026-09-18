@@ -177,7 +177,28 @@ export type BrowserSessionProfile = {
   partition: string
   label: string
   source: BrowserSessionProfileSource | null
+  /** Unpacked extension directories reloaded into this profile's partition on every boot. */
+  extensions?: string[]
 }
+
+/** One configured extension directory, with what Electron made of it on the last load. */
+export type BrowserSessionExtension = {
+  directory: string
+  id: string | null
+  name: string | null
+  version: string | null
+  error: string | null
+}
+
+export type BrowserSessionExtensionsOutcome =
+  | {
+      ok: true
+      profileId: string
+      extensions: BrowserSessionExtension[]
+      /** Open pages navigated again so a changed extension set actually applies to them. */
+      reloadedPages: number
+    }
+  | { ok: false; reason: string }
 
 export type BrowserCookieImportSummary = {
   totalCookies: number
