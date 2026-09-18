@@ -71,10 +71,7 @@ export function registerBrowserSessionExtensionHandlers(): void {
 async function pickUnpackedExtensionDirectory(
   sender: Electron.WebContents
 ): Promise<string | null> {
-  const options = {
-    title: 'Add Unpacked Extension',
-    properties: ['openDirectory' as const]
-  }
+  const options = { properties: ['openDirectory' as const] }
   const parent = BrowserWindow.fromWebContents(sender)
   const result = parent
     ? await dialog.showOpenDialog(parent, options)

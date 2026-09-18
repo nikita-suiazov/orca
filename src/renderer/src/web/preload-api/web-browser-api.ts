@@ -2,10 +2,13 @@ import type { PreloadApi } from '../../../../preload/api-types'
 import { translate } from '@/i18n/i18n'
 import { noopUnsubscribe } from './web-storage'
 
-const unavailableExtensions = {
-  ok: false as const,
-  reason: 'Browser extensions are unavailable in the web client.'
-}
+const unavailableExtensions = (): { ok: false; reason: string } => ({
+  ok: false,
+  reason: translate(
+    'settings.browser.extensions.webUnavailable',
+    'Browser extensions are unavailable in the web client.'
+  )
+})
 
 export function createBrowserApi(): NonNullable<Partial<PreloadApi>['browser']> {
   // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: every method here refuses; six of them refuse with a generic { ok: false, error } instead of the per-API result union, which is what this cast covers.
@@ -86,10 +89,10 @@ export function createBrowserApi(): NonNullable<Partial<PreloadApi>['browser']> 
         )
       }),
     sessionResolvePartition: () => Promise.resolve(null),
-    sessionListExtensions: () => Promise.resolve(unavailableExtensions),
-    sessionAddExtension: () => Promise.resolve(unavailableExtensions),
-    sessionRemoveExtension: () => Promise.resolve(unavailableExtensions),
-    sessionReloadExtensions: () => Promise.resolve(unavailableExtensions),
+    sessionListExtensions: () => Promise.resolve(unavailableExtensions()),
+    sessionAddExtension: () => Promise.resolve(unavailableExtensions()),
+    sessionRemoveExtension: () => Promise.resolve(unavailableExtensions()),
+    sessionReloadExtensions: () => Promise.resolve(unavailableExtensions()),
     sessionDetectBrowsers: () => Promise.resolve([]),
     sessionDetectBrowsersForClientHost: () => Promise.resolve(null),
     sessionImportFromBrowserForClientHost: () => Promise.resolve(null),

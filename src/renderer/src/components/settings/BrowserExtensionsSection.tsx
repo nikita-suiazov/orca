@@ -68,6 +68,7 @@ export function BrowserExtensionsSection({
             </div>
             <BrowserProfileExtensionList
               extensions={controller.extensionsByProfileId[profile.id] ?? []}
+              busy={controller.busyProfileId === profile.id}
               onRemove={(directory) => void controller.remove(profile.id, directory)}
             />
           </div>
@@ -79,9 +80,11 @@ export function BrowserExtensionsSection({
 
 function BrowserProfileExtensionList({
   extensions,
+  busy,
   onRemove
 }: {
   extensions: ReturnType<typeof useBrowserSessionExtensions>['extensionsByProfileId'][string]
+  busy: boolean
   onRemove: (directory: string) => void
 }): React.JSX.Element {
   if (extensions.length === 0) {
@@ -109,6 +112,7 @@ function BrowserProfileExtensionList({
             variant="ghost"
             size="xs"
             className="shrink-0"
+            disabled={busy}
             aria-label={translate('settings.browser.extensions.remove', 'Remove extension')}
             onClick={() => onRemove(extension.directory)}
           >

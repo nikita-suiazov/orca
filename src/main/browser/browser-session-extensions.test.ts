@@ -206,7 +206,7 @@ describe('browser session extensions', () => {
     const extensions = await second
 
     expect(state.loadCallsByPartition.get('persist:p')).toEqual(['/slow', '/fast'])
-    // The newer list wins: an overlapping apply reads an empty map and leaves /slow loaded.
+    // The newer list wins, which an apply overlapping the first one would have missed.
     expect(state.removedByPartition.get('persist:p')).toEqual(['id-/slow'])
     expect(extensions.map((extension) => extension.directory)).toEqual(['/fast'])
   })

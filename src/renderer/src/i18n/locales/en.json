@@ -214,7 +214,8 @@
         "notLoaded": "Not loaded",
         "remove": "Remove extension",
         "title": "Extensions",
-        "searchDescription": "Load unpacked Chrome extensions into a browser profile."
+        "searchDescription": "Load unpacked Chrome extensions into a browser profile.",
+        "webUnavailable": "Browser extensions are unavailable in the web client."
       }
     }
   },

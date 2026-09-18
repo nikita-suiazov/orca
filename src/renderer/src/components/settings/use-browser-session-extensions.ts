@@ -88,7 +88,9 @@ export function useBrowserSessionExtensions(
       void api
         .sessionListExtensions({ profileId })
         .then((outcome) => settle(profileId, outcome))
-        .catch(() => {})
+        .catch((cause: unknown) => {
+          setError(cause instanceof Error ? cause.message : String(cause))
+        })
     }
   }, [profileIds, settle])
 
