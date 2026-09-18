@@ -128,6 +128,14 @@ export const browserPageInteractionAndSessionsApi = {
     ipcRenderer.invoke('browser:session:importCookies', args),
   sessionResolvePartition: (args: { profileId: string | null }): Promise<string | null> =>
     ipcRenderer.invoke('browser:session:resolvePartition', args),
+  sessionListExtensions: (args: { profileId: string }) =>
+    ipcRenderer.invoke('browser:session:listExtensions', args),
+  sessionAddExtension: (args: { profileId: string }) =>
+    ipcRenderer.invoke('browser:session:addExtension', args),
+  sessionRemoveExtension: (args: { profileId: string; directory: string }) =>
+    ipcRenderer.invoke('browser:session:removeExtension', args),
+  sessionReloadExtensions: (args: { profileId: string }) =>
+    ipcRenderer.invoke('browser:session:reloadExtensions', args),
   sessionDetectBrowsers: () => ipcRenderer.invoke('browser:session:detectBrowsers'),
   sessionDetectBrowsersForClientHost: (args: { environmentId: string }) =>
     ipcRenderer.invoke('browser:session:detectBrowsersForClientHost', args),

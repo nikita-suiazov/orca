@@ -66,6 +66,7 @@ export const BROWSER_TERMINAL_LINK_ACTIONS_SETTINGS_TARGET_ID = 'browser-termina
 export const BROWSER_CLIENT_HOSTED_REMOTE_SETTINGS_TARGET_ID = 'browser-client-hosted-remote'
 export const BROWSER_SSH_WORKSPACE_ROUTING_SETTINGS_TARGET_ID = 'browser-ssh-workspace-routing'
 export const BROWSER_USER_AGENT_SETTINGS_TARGET_ID = 'browser-user-agent'
+export const BROWSER_EXTENSIONS_SETTINGS_TARGET_ID = 'browser-extensions'
 export const GLOBAL_WORKTREE_VISIBILITY_SETTINGS_TARGET_ID = 'general-global-worktree-visibility'
 
 export type SettingsNavigationTarget = {

@@ -205,6 +205,16 @@
         "optionNativeTooltip": "Keeps Electron's built-in identity for sites that reject the cleaned identity. Google sign-in is unavailable in Native mode.",
         "restartRequired": "Restart required",
         "unavailable": "Browser identity is unavailable."
+      },
+      "extensions": {
+        "description": "Load unpacked Chrome extensions into a browser profile. They are reloaded every time Orca starts. Extension toolbar popups and options pages are not available yet.",
+        "reload": "Reload",
+        "add": "Add unpacked extension…",
+        "empty": "No extensions loaded in this profile.",
+        "notLoaded": "Not loaded",
+        "remove": "Remove extension",
+        "title": "Extensions",
+        "searchDescription": "Load unpacked Chrome extensions into a browser profile."
       }
     }
   },
@@ -9342,6 +9352,13 @@
               "native": "native",
               "cleaned": "cleaned",
               "restart": "restart"
+            },
+            "extensions": {
+              "extension": "extension",
+              "unpacked": "unpacked",
+              "chrome": "chrome",
+              "addon": "add-on",
+              "manifest": "manifest"
             }
           },
           "use": {

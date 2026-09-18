@@ -142,6 +142,11 @@ const BROWSER_PAGE_CHANNELS = [
   'browser:session:detectBrowsers',
   'browser:session:detectBrowsersForClientHost',
   'browser:session:importFromBrowser',
+  // Per-profile unpacked extensions: they configure an Electron partition, never a viewed guest.
+  'browser:session:listExtensions',
+  'browser:session:addExtension',
+  'browser:session:removeExtension',
+  'browser:session:reloadExtensions',
   // Process-wide identity: reads/writes the host's own user-agent choice, never a viewed guest.
   'browser:identity:get',
   'browser:identity:set'

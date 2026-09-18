@@ -2,6 +2,11 @@ import type { PreloadApi } from '../../../../preload/api-types'
 import { translate } from '@/i18n/i18n'
 import { noopUnsubscribe } from './web-storage'
 
+const unavailableExtensions = {
+  ok: false as const,
+  reason: 'Browser extensions are unavailable in the web client.'
+}
+
 export function createBrowserApi(): NonNullable<Partial<PreloadApi>['browser']> {
   return {
     registerGuest: () => Promise.resolve(false),
@@ -80,6 +85,10 @@ export function createBrowserApi(): NonNullable<Partial<PreloadApi>['browser']> 
         )
       }),
     sessionResolvePartition: () => Promise.resolve(null),
+    sessionListExtensions: () => Promise.resolve(unavailableExtensions),
+    sessionAddExtension: () => Promise.resolve(unavailableExtensions),
+    sessionRemoveExtension: () => Promise.resolve(unavailableExtensions),
+    sessionReloadExtensions: () => Promise.resolve(unavailableExtensions),
     sessionDetectBrowsers: () => Promise.resolve([]),
     sessionDetectBrowsersForClientHost: () => Promise.resolve(null),
     sessionImportFromBrowserForClientHost: () => Promise.resolve(null),

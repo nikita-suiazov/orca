@@ -14,6 +14,7 @@ import {
   resetGrabModeState
 } from './browser-grab-ipc'
 import { registerBrowserSessionProfileHandlers } from './browser-session-profile-ipc'
+import { registerBrowserSessionExtensionHandlers } from './browser-session-extension-ipc'
 import type { BrowserCertificateProceedResult } from '../../shared/browser-workspace-types'
 import {
   cancelBrowserWebAuthnAccountRequests,
@@ -236,4 +237,5 @@ export function registerBrowserHandlers(): void {
   // --- Browser Session Profile IPC ---
 
   registerBrowserSessionProfileHandlers()
+  registerBrowserSessionExtensionHandlers()
 }

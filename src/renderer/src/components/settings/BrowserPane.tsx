@@ -19,6 +19,7 @@ import { BrowserSshWorkspaceRoutingSetting } from './BrowserSshWorkspaceRoutingS
 import { BrowserUserAgentSetting } from './BrowserUserAgentSetting'
 import { SettingsSubsectionHeader } from './SettingsFormControls'
 import { BrowserSessionCookiesSection } from './BrowserSessionCookiesSection'
+import { BrowserExtensionsSection } from './BrowserExtensionsSection'
 import { BrowserNewProfileDialog } from './BrowserNewProfileDialog'
 import {
   createBrowserHomePageDraftState,
@@ -28,6 +29,7 @@ import { buildSidebarHostOptions } from '../sidebar/sidebar-host-options'
 import { getHostDisplayLabelOverrides } from '../../../../shared/host-setting-overrides'
 import {
   getSettingsFocusedExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID,
   type ExecutionHostId
 } from '../../../../shared/execution-host'
 import { isMacUserAgent } from '@/components/terminal-pane/pane-helpers'
@@ -121,6 +123,7 @@ export function BrowserPane({
     getBrowserPaneSearchEntries()[9]
   ])
   const showUserAgent = matchesSettingsSearch(searchQuery, [getBrowserPaneSearchEntries()[10]])
+  const showExtensions = matchesSettingsSearch(searchQuery, [getBrowserPaneSearchEntries()[11]])
   const showBrowserUse = matchesSettingsSearch(searchQuery, getBrowserUsePaneSearchEntries())
   const isMac = isMacUserAgent()
   const linkRoutingDescription = getBrowserLinkRoutingDescription(
@@ -319,6 +322,11 @@ export function BrowserPane({
           onSelectDefaultProfile={() => setDefaultBrowserSessionProfileId(null)}
           onSelectProfile={setDefaultBrowserSessionProfileId}
         />
+      ) : null}
+
+      {/* Extensions load into this desktop's own partitions, so a remote host's profiles have none. */}
+      {showExtensions && selectedBrowserSessionHostId === LOCAL_EXECUTION_HOST_ID ? (
+        <BrowserExtensionsSection profiles={browserSessionProfiles} />
       ) : null}
 
       <BrowserNewProfileDialog open={newProfileDialogOpen} onOpenChange={setNewProfileDialogOpen} />

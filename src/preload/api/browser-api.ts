@@ -37,6 +37,7 @@ import type {
   BrowserCertificateProceedResult,
   BrowserCookieImportResult,
   BrowserLoadError,
+  BrowserSessionExtensionsOutcome,
   BrowserSessionProfile,
   BrowserSessionProfileScope,
   BrowserSessionProfileSource,
@@ -153,6 +154,14 @@ export type BrowserApi = {
   sessionDeleteProfile: (args: { profileId: string }) => Promise<boolean>
   sessionImportCookies: (args: { profileId: string }) => Promise<BrowserCookieImportResult>
   sessionResolvePartition: (args: { profileId: string | null }) => Promise<string | null>
+  sessionListExtensions: (args: { profileId: string }) => Promise<BrowserSessionExtensionsOutcome>
+  /** Main owns the directory picker, so the renderer never names a path it was not shown. */
+  sessionAddExtension: (args: { profileId: string }) => Promise<BrowserSessionExtensionsOutcome>
+  sessionRemoveExtension: (args: {
+    profileId: string
+    directory: string
+  }) => Promise<BrowserSessionExtensionsOutcome>
+  sessionReloadExtensions: (args: { profileId: string }) => Promise<BrowserSessionExtensionsOutcome>
   sessionDetectBrowsers: () => Promise<DetectedBrowserInfo[]>
   /** Null when the environment's pages are not client-hosted on this desktop. */
   sessionDetectBrowsersForClientHost: (args: {
