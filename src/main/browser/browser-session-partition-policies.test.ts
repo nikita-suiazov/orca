@@ -5,7 +5,9 @@ const mocks = vi.hoisted(() => ({
   handleGuestWillDownload: vi.fn(),
   noticeDocPreviewDownloadBlocked: vi.fn(),
   clearBrowserWebAuthnAccessHandlers: vi.fn(),
-  installBrowserWebAuthnAccessHandlers: vi.fn()
+  installBrowserWebAuthnAccessHandlers: vi.fn(),
+  applyBrowserSessionExtensions: vi.fn(async () => []),
+  reloadBrowserSessionPages: vi.fn(() => 0)
 }))
 
 type WillDownloadListener = (
@@ -87,6 +89,10 @@ vi.mock('./browser-session-ua', () => ({
 vi.mock('./browser-process-user-agent', () => ({
   getBrowserProcessUserAgentIdentity: () => ({ mode: 'clean', userAgent: 'Mozilla/5.0 Orca' })
 }))
+vi.mock('./browser-session-extensions', () => ({
+  applyBrowserSessionExtensions: mocks.applyBrowserSessionExtensions,
+  reloadBrowserSessionPages: mocks.reloadBrowserSessionPages
+}))
 vi.mock('./browser-webauthn-access', () => ({
   allowsBrowserWebAuthnPermission: () => false,
   clearBrowserWebAuthnAccessHandlers: mocks.clearBrowserWebAuthnAccessHandlers,
@@ -95,8 +101,12 @@ vi.mock('./browser-webauthn-access', () => ({
 
 type PartitionPolicyInstaller = (
   profile: BrowserSessionProfile,
-  options?: { downloads?: 'route' | 'deny'; permissions?: 'browser' | 'deny' }
-) => void
+  options?: {
+    downloads?: 'route' | 'deny'
+    permissions?: 'browser' | 'deny'
+    extensions?: readonly string[]
+  }
+) => Promise<void>
 
 // Why imported per test rather than at the top: the installer remembers which partitions it has
 // already configured in module state, so a shared import would make the second test's install a
@@ -229,5 +239,36 @@ describe('partition permission policy', () => {
       displayMediaDecision = decision
     })
     expect(displayMediaDecision).toEqual({ video: undefined, audio: undefined })
+  })
+})
+
+describe('partition extension policy', () => {
+  it('reloads the partition pages only once the boot-time load has settled', async () => {
+    let release = (): void => {}
+    const loading = new Promise<[]>((resolve) => {
+      release = () => resolve([])
+    })
+    mocks.applyBrowserSessionExtensions.mockReturnValue(loading)
+    const install = await loadInstaller()
+
+    await install(profileFor('persist:browsing-ext'), { extensions: ['/a'] })
+
+    expect(mocks.applyBrowserSessionExtensions).toHaveBeenCalledWith('persist:browsing-ext', ['/a'])
+    // A page restored during the load would keep running without content scripts.
+    expect(mocks.reloadBrowserSessionPages).not.toHaveBeenCalled()
+
+    release()
+    await loading
+
+    expect(mocks.reloadBrowserSessionPages).toHaveBeenCalledWith('persist:browsing-ext')
+  })
+
+  it('loads nothing, and reloads nothing, on a partition that carries no extensions', async () => {
+    const install = await loadInstaller()
+
+    await install(profileFor('persist:browsing-1'))
+
+    expect(mocks.applyBrowserSessionExtensions).not.toHaveBeenCalled()
+    expect(mocks.reloadBrowserSessionPages).not.toHaveBeenCalled()
   })
 })

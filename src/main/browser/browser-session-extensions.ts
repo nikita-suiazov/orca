@@ -7,14 +7,42 @@ import type { BrowserSessionExtension } from '../../shared/browser-workspace-typ
 // A string value is the load error for that directory, kept so the UI can show why it failed.
 const extensionsByPartition = new Map<string, Map<string, Extension | string>>()
 
-export async function applyBrowserSessionExtensions(
+// Why a queue: `loadExtension` is awaited, so a retirement that lands mid-load would unload only
+// what arrived before it, and two applies would each carry a different list, the last one to
+// finish winning over the newer one. One partition loads, unloads and reloads one thing at a time.
+const workByPartition = new Map<string, Promise<unknown>>()
+
+function serializeByPartition<T>(partition: string, work: () => T | Promise<T>): Promise<T> {
+  const next = (workByPartition.get(partition) ?? Promise.resolve()).then(work)
+  workByPartition.set(
+    partition,
+    next.then(
+      () => undefined,
+      () => undefined
+    )
+  )
+  return next
+}
+
+export function applyBrowserSessionExtensions(
   partition: string,
   directories: readonly string[],
   /** `reload` re-calls `loadExtension` on live directories; Electron swaps the copy in place. */
   options: { reload?: boolean } = {}
 ): Promise<BrowserSessionExtension[]> {
+  return serializeByPartition(partition, () =>
+    loadPartitionExtensions(partition, directories, options)
+  )
+}
+
+async function loadPartitionExtensions(
+  partition: string,
+  directories: readonly string[],
+  options: { reload?: boolean }
+): Promise<BrowserSessionExtension[]> {
   const sess = session.fromPartition(partition)
   const loaded = extensionsByPartition.get(partition) ?? new Map<string, Extension | string>()
+  extensionsByPartition.set(partition, loaded)
   for (const [directory, entry] of loaded) {
     if (directories.includes(directory)) {
       continue
@@ -39,7 +67,6 @@ export async function applyBrowserSessionExtensions(
       loaded.set(directory, error instanceof Error ? error.message : String(error))
     }
   }
-  extensionsByPartition.set(partition, loaded)
   return describeBrowserSessionExtensions(partition, directories)
 }
 
@@ -67,21 +94,24 @@ export function describeBrowserSessionExtensions(
 }
 
 /**
- * Unload everything a retired partition holds. Its Electron Session outlives the profile, and a
- * left-behind extension keeps its service worker and host permissions running in it.
+ * Unload everything a retired partition holds, including a load still in flight. Its Electron
+ * Session outlives the profile, and a left-behind extension keeps its service worker and host
+ * permissions running in it.
  */
-export function unloadBrowserSessionExtensions(partition: string): void {
-  const loaded = extensionsByPartition.get(partition)
-  extensionsByPartition.delete(partition)
-  if (!loaded) {
-    return
-  }
-  const sess = session.fromPartition(partition)
-  for (const entry of loaded.values()) {
-    if (typeof entry !== 'string') {
-      sess.extensions.removeExtension(entry.id)
+export function unloadBrowserSessionExtensions(partition: string): Promise<void> {
+  return serializeByPartition(partition, () => {
+    const loaded = extensionsByPartition.get(partition)
+    extensionsByPartition.delete(partition)
+    if (!loaded) {
+      return
     }
-  }
+    const sess = session.fromPartition(partition)
+    for (const entry of loaded.values()) {
+      if (typeof entry !== 'string') {
+        sess.extensions.removeExtension(entry.id)
+      }
+    }
+  })
 }
 
 /**

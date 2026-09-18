@@ -38,7 +38,7 @@ export async function retireDeletedBrowserSessionProfilePartition(
   try {
     const sess = session.fromPartition(partition)
     forgetBrowserSessionPartitionConfiguration(partition)
-    unloadBrowserSessionExtensions(partition)
+    await unloadBrowserSessionExtensions(partition)
     retireBrowserSessionUserAgentPolicy(sess)
     invalidateBrowserSessionProxyApplication(sess)
     const release = retireProxySessionApplication(sess)

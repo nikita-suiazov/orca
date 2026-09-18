@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
   loadCallsByPartition: new Map<string, string[]>(),
   removedByPartition: new Map<string, string[]>(),
   failingDirectories: new Set<string>(),
+  blockedDirectories: new Map<string, Promise<void>>(),
   allWebContents: [] as {
     isDestroyed: () => boolean
     session: unknown
@@ -29,6 +30,7 @@ function fakeSession(partition: string): FakeSession {
           ...(state.loadCallsByPartition.get(partition) ?? []),
           directory
         ])
+        await state.blockedDirectories.get(directory)
         if (state.failingDirectories.has(directory)) {
           throw new Error(`no manifest at ${directory}`)
         }
@@ -64,6 +66,18 @@ vi.mock('electron', () => ({
   webContents: { getAllWebContents: () => state.allWebContents }
 }))
 
+/** Holds `loadExtension` for one directory open until the returned release is called. */
+function blockDirectory(directory: string): () => void {
+  let release = (): void => {}
+  state.blockedDirectories.set(
+    directory,
+    new Promise<void>((resolve) => {
+      release = resolve
+    })
+  )
+  return release
+}
+
 describe('browser session extensions', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -71,6 +85,7 @@ describe('browser session extensions', () => {
     state.loadCallsByPartition.clear()
     state.removedByPartition.clear()
     state.failingDirectories.clear()
+    state.blockedDirectories.clear()
     state.allWebContents = []
   })
 
@@ -169,12 +184,46 @@ describe('browser session extensions', () => {
       await import('./browser-session-extensions')
     await applyBrowserSessionExtensions('persist:p', ['/a'])
 
-    unloadBrowserSessionExtensions('persist:p')
+    await unloadBrowserSessionExtensions('persist:p')
 
     expect(state.removedByPartition.get('persist:p')).toEqual(['id-/a'])
     // And the bookkeeping is gone, so a re-created profile loads from scratch.
     await applyBrowserSessionExtensions('persist:p', ['/a'])
     expect(state.loadCallsByPartition.get('persist:p')).toEqual(['/a', '/a'])
+  })
+
+  it('holds a second apply for the partition until the first one finished', async () => {
+    const { applyBrowserSessionExtensions } = await import('./browser-session-extensions')
+    const release = blockDirectory('/slow')
+
+    const first = applyBrowserSessionExtensions('persist:p', ['/slow'])
+    const second = applyBrowserSessionExtensions('persist:p', ['/fast'])
+    await Promise.resolve()
+
+    expect(state.loadCallsByPartition.get('persist:p')).toEqual(['/slow'])
+
+    release()
+    await first
+    const extensions = await second
+
+    expect(state.loadCallsByPartition.get('persist:p')).toEqual(['/slow', '/fast'])
+    // The newer list wins: an overlapping apply reads an empty map and leaves /slow loaded.
+    expect(state.removedByPartition.get('persist:p')).toEqual(['id-/slow'])
+    expect(extensions.map((extension) => extension.directory)).toEqual(['/fast'])
+  })
+
+  it('unloads an extension whose load only landed after the partition was retired', async () => {
+    const { applyBrowserSessionExtensions, unloadBrowserSessionExtensions } =
+      await import('./browser-session-extensions')
+    const release = blockDirectory('/slow')
+    const applied = applyBrowserSessionExtensions('persist:p', ['/slow'])
+    const unloaded = unloadBrowserSessionExtensions('persist:p')
+
+    release()
+    await applied
+    await unloaded
+
+    expect(state.removedByPartition.get('persist:p')).toEqual(['id-/slow'])
   })
 
   it('reloads only the pages that belong to the partition', async () => {

@@ -17,7 +17,10 @@ import {
   installBrowserWebAuthnAccessHandlers
 } from './browser-webauthn-access'
 import { noticeDocPreviewDownloadBlocked } from './doc-preview-download-block-notice'
-import { applyBrowserSessionExtensions } from './browser-session-extensions'
+import {
+  applyBrowserSessionExtensions,
+  reloadBrowserSessionPages
+} from './browser-session-extensions'
 
 // Why: one shared installer keeps every partition's deny-by-default permission/download policies from drifting apart.
 const configuredPartitions = new Set<string>()
@@ -119,9 +122,13 @@ export async function installBrowserSessionPartitionPolicies(
   // every boot. Route and preview partitions pass no `extensions`, so they stay extension-free
   // without a scope test. Detached because one unloadable extension must not fail the profile.
   if (options.extensions !== undefined && options.extensions.length > 0) {
-    void applyBrowserSessionExtensions(partition, options.extensions).catch((error: unknown) => {
-      console.warn('[browser-extensions] Failed to load extensions for', partition, error)
-    })
+    void applyBrowserSessionExtensions(partition, options.extensions)
+      // A page restored while the load was still in flight carries no content scripts until it
+      // navigates again; at this point the profile usually has no page open and this reloads none.
+      .then(() => reloadBrowserSessionPages(partition))
+      .catch((error: unknown) => {
+        console.warn('[browser-extensions] Failed to load extensions for', partition, error)
+      })
   }
   // Why: route partitions own a SOCKS transport policy that the app proxy must not overwrite.
   const proxyReady = (
