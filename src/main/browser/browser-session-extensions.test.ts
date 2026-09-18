@@ -9,18 +9,17 @@ type FakeSession = {
   }
 }
 
-const state = vi.hoisted(() => ({
-  sessions: new Map<string, unknown>(),
-  loadCallsByPartition: new Map<string, string[]>(),
-  removedByPartition: new Map<string, string[]>(),
-  failingDirectories: new Set<string>(),
-  blockedDirectories: new Map<string, Promise<void>>(),
-  allWebContents: [] as {
-    isDestroyed: () => boolean
-    session: unknown
-    reload: ReturnType<typeof vi.fn>
-  }[]
-}))
+const state = vi.hoisted(() => {
+  const allWebContents: { isDestroyed: () => boolean; session: unknown; reload: () => void }[] = []
+  return {
+    sessions: new Map<string, unknown>(),
+    loadCallsByPartition: new Map<string, string[]>(),
+    removedByPartition: new Map<string, string[]>(),
+    failingDirectories: new Set<string>(),
+    blockedDirectories: new Map<string, Promise<void>>(),
+    allWebContents
+  }
+})
 
 function fakeSession(partition: string): FakeSession {
   return {

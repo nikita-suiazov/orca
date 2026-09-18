@@ -24,8 +24,8 @@ type ExtensionsApi = {
 }
 
 function extensionsApi(): ExtensionsApi | null {
-  const api = window.api?.browser as Partial<ExtensionsApi> | undefined
-  return api?.sessionListExtensions ? (api as ExtensionsApi) : null
+  const api = window.api?.browser
+  return typeof api?.sessionListExtensions === 'function' ? api : null
 }
 
 /**

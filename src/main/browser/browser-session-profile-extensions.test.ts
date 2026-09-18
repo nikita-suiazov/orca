@@ -10,10 +10,11 @@ const registry = vi.hoisted(() => ({
   updateProfile: vi.fn()
 }))
 
-const sessionExtensions = vi.hoisted(() => ({
-  applied: [] as { partition: string; directories: readonly string[]; reload: boolean }[],
-  reloadedPartitions: [] as string[]
-}))
+const sessionExtensions = vi.hoisted(() => {
+  const applied: { partition: string; directories: readonly string[]; reload: boolean }[] = []
+  const reloadedPartitions: string[] = []
+  return { applied, reloadedPartitions }
+})
 
 vi.mock('./browser-session-registry', () => ({
   browserSessionRegistry: {

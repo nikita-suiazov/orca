@@ -35,15 +35,10 @@ function readPersistedProfiles(value: unknown): BrowserSessionProfile[] {
   if (!Array.isArray(value)) {
     return []
   }
-  return value.map((profile) =>
+  return value.map((profile: BrowserSessionProfile) =>
     profile && typeof profile === 'object'
-      ? {
-          ...(profile as BrowserSessionProfile),
-          extensions: sanitizePersistedBrowserSessionExtensions(
-            (profile as BrowserSessionProfile).extensions
-          )
-        }
-      : (profile as BrowserSessionProfile)
+      ? { ...profile, extensions: sanitizePersistedBrowserSessionExtensions(profile.extensions) }
+      : profile
   )
 }
 

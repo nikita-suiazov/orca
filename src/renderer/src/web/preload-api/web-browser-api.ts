@@ -8,6 +8,7 @@ const unavailableExtensions = {
 }
 
 export function createBrowserApi(): NonNullable<Partial<PreloadApi>['browser']> {
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: every method here refuses; six of them refuse with a generic { ok: false, error } instead of the per-API result union, which is what this cast covers.
   return {
     registerGuest: () => Promise.resolve(false),
     isGuestRegistered: () => Promise.resolve(false),

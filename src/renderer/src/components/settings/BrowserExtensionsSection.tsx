@@ -44,12 +44,11 @@ export function BrowserExtensionsSection({
         {profiles.map((profile) => (
           <div key={profile.id} className="space-y-2 rounded-md border border-border/70 px-3 py-2">
             <div className="flex items-center justify-between gap-3">
-              <Label className="truncate text-xs">{profile.label}</Label>
+              <span className="truncate text-xs font-medium">{profile.label}</span>
               <div className="flex shrink-0 items-center gap-1.5">
                 <Button
                   variant="ghost"
                   size="xs"
-                  className="gap-1.5"
                   disabled={controller.busyProfileId === profile.id}
                   onClick={() => void controller.reload(profile.id)}
                 >
@@ -59,7 +58,6 @@ export function BrowserExtensionsSection({
                 <Button
                   variant="outline"
                   size="xs"
-                  className="gap-1.5"
                   disabled={controller.busyProfileId === profile.id}
                   onClick={() => void controller.add(profile.id)}
                 >
