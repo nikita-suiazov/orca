@@ -79,7 +79,11 @@ export const BROWSER_HANDLER_GROUPS: readonly HandlerGroup[] = [
       'tab profile set',
       'tab profile show',
       'tab profile use-default',
-      'tab profile clone'
+      'tab profile clone',
+      'tab profile extension list',
+      'tab profile extension add',
+      'tab profile extension rm',
+      'tab profile extension reload'
     ],
     load: async () => (await import('./handlers/browser-profile.js')).BROWSER_PROFILE_HANDLERS
   },

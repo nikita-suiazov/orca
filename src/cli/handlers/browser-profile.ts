@@ -1,6 +1,8 @@
+import { resolve } from 'node:path'
 import type {
   BrowserProfileCreateResult,
   BrowserProfileDeleteResult,
+  BrowserProfileExtensionsResult,
   BrowserProfileListResult,
   BrowserTabProfileCloneResult,
   BrowserTabProfileShowResult,
@@ -9,6 +11,7 @@ import type {
 import type { CommandHandler } from '../dispatch'
 import { getOptionalStringFlag, getRequiredStringFlag } from '../flags'
 import {
+  formatBrowserProfileExtensions,
   formatBrowserProfileList,
   formatTabProfileClone,
   formatTabProfileShow,
@@ -26,6 +29,18 @@ function parseScopeFlag(flags: Map<string, string | boolean>): 'isolated' | 'imp
     return 'imported'
   }
   throw new RuntimeClientError('invalid_argument', '--scope must be "isolated" or "imported"')
+}
+
+// Why resolved here: --dir is typed against the shell's cwd, but the runtime that loads the
+// extension is a different process with a different one, so only an absolute path is portable.
+function extensionTarget(
+  flags: Map<string, string | boolean>,
+  cwd: string
+): { profileId: string; directory: string } {
+  return {
+    profileId: getOptionalStringFlag(flags, 'profile') ?? 'default',
+    directory: resolve(cwd, getRequiredStringFlag(flags, 'dir'))
+  }
 }
 
 export const BROWSER_PROFILE_HANDLERS: Record<string, CommandHandler> = {
@@ -93,6 +108,34 @@ export const BROWSER_PROFILE_HANDLERS: Record<string, CommandHandler> = {
       profileId: 'default'
     })
     printResult(result, json, (value) => `Switched ${value.browserPageId} to Default`)
+  },
+  'tab profile extension list': async ({ flags, client, json }) => {
+    const result = await client.call<BrowserProfileExtensionsResult>(
+      'browser.profileExtensionList',
+      { profileId: getOptionalStringFlag(flags, 'profile') ?? 'default' }
+    )
+    printResult(result, json, formatBrowserProfileExtensions)
+  },
+  'tab profile extension add': async ({ flags, client, cwd, json }) => {
+    const result = await client.call<BrowserProfileExtensionsResult>(
+      'browser.profileExtensionAdd',
+      extensionTarget(flags, cwd)
+    )
+    printResult(result, json, formatBrowserProfileExtensions)
+  },
+  'tab profile extension rm': async ({ flags, client, cwd, json }) => {
+    const result = await client.call<BrowserProfileExtensionsResult>(
+      'browser.profileExtensionRemove',
+      extensionTarget(flags, cwd)
+    )
+    printResult(result, json, formatBrowserProfileExtensions)
+  },
+  'tab profile extension reload': async ({ flags, client, json }) => {
+    const result = await client.call<BrowserProfileExtensionsResult>(
+      'browser.profileExtensionReload',
+      { profileId: getOptionalStringFlag(flags, 'profile') ?? 'default' }
+    )
+    printResult(result, json, formatBrowserProfileExtensions)
   },
   'tab profile clone': async ({ flags, client, cwd, json }) => {
     const profileId = getRequiredStringFlag(flags, 'profile')

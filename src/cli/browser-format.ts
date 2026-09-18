@@ -1,5 +1,6 @@
 import { formatBase64PayloadByteCount } from './base64-payload-byte-count'
 import type {
+  BrowserProfileExtensionsResult,
   BrowserProfileListResult,
   BrowserScreenshotResult,
   BrowserSnapshotResult,
@@ -50,6 +51,20 @@ export function formatBrowserProfileList(result: BrowserProfileListResult): stri
       return `${marker}${profile.id}  ${profile.label}  ${profile.scope}  source:${source}`
     })
     .join('\n')
+}
+
+export function formatBrowserProfileExtensions(result: BrowserProfileExtensionsResult): string {
+  const reloaded =
+    result.reloadedPages > 0 ? `\nReloaded ${result.reloadedPages} open page(s).` : ''
+  if (result.extensions.length === 0) {
+    return `No extensions loaded in profile ${result.profileId}.${reloaded}`
+  }
+  const rows = result.extensions.map((extension) =>
+    extension.error === null
+      ? `  ${extension.name ?? 'unknown'} ${extension.version ?? '?'}  ${extension.id ?? 'not loaded'}  ${extension.directory}`
+      : `  FAILED  ${extension.directory}  ${extension.error}`
+  )
+  return [`profile: ${result.profileId}`, ...rows].join('\n') + reloaded
 }
 
 export function formatTabShow(result: BrowserTabShowResult | BrowserTabCurrentResult): string {

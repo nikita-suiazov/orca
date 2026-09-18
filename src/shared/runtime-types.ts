@@ -51,6 +51,7 @@ export type {
   BrowserProfileClearDefaultCookiesResult,
   BrowserProfileCreateResult,
   BrowserProfileDeleteResult,
+  BrowserProfileExtensionsResult,
   BrowserProfileImportFromBrowserResult,
   BrowserProfileListResult,
   BrowserReloadResult,

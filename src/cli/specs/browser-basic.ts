@@ -238,6 +238,31 @@ export const BROWSER_BASIC_COMMAND_SPECS: CommandSpec[] = [
     allowedFlags: [...GLOBAL_FLAGS, 'page', 'worktree']
   },
   {
+    path: ['tab', 'profile', 'extension', 'list'],
+    summary: 'List the unpacked extensions loaded into a browser session profile',
+    usage: 'orca tab profile extension list [--profile <id>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'profile']
+  },
+  {
+    path: ['tab', 'profile', 'extension', 'add'],
+    summary: 'Load an unpacked extension into a browser session profile (reloads its open pages)',
+    usage: 'orca tab profile extension add --dir <path> [--profile <id>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'profile', 'dir']
+  },
+  {
+    path: ['tab', 'profile', 'extension', 'rm'],
+    destructive: true,
+    summary: 'Unload an extension from a browser session profile (reloads its open pages)',
+    usage: 'orca tab profile extension rm --dir <path> [--profile <id>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'profile', 'dir']
+  },
+  {
+    path: ['tab', 'profile', 'extension', 'reload'],
+    summary: 'Re-read every extension of a browser session profile from disk and reload its pages',
+    usage: 'orca tab profile extension reload [--profile <id>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'profile']
+  },
+  {
     path: ['tab', 'profile', 'clone'],
     summary: 'Clone a browser tab into a different browser profile',
     usage: 'orca tab profile clone --profile <id> [--page <id>] [--worktree <selector>] [--json]',

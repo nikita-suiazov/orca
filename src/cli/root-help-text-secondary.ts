@@ -175,6 +175,7 @@ export const ROOT_HELP_TEXT_SECONDARY = [
   '  $ orca tab show --page page_123 --json',
   '  $ orca tab create --url https://example.com --profile work',
   '  $ orca tab profile clone --page page_123 --profile work --json',
+  '  $ orca tab profile extension add --profile work --dir ./my-extension/dist',
   '  $ orca snapshot',
   '  $ orca click --element e3',
   '  $ orca fill --element e5 --value "hello"',

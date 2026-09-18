@@ -5,6 +5,7 @@ import type { RuntimeRpcSuccess } from './runtime-client'
 export { formatCliError, reportCliError, type CliErrorContext } from './cli-error'
 
 export {
+  formatBrowserProfileExtensions,
   formatBrowserProfileList,
   formatScreenshot,
   formatSnapshot,

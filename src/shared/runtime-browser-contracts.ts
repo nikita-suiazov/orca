@@ -2,6 +2,7 @@ import type {
   BrowserCertificateFailure,
   BrowserCookieImportResult,
   BrowserLoadError,
+  BrowserSessionExtension,
   BrowserSessionProfile,
   BrowserSessionProfileSource
 } from './browser-workspace-types'
@@ -89,6 +90,12 @@ export type BrowserTabProfileCloneResult = {
 }
 
 export type BrowserProfileListResult = { profiles: BrowserSessionProfile[] }
+export type BrowserProfileExtensionsResult = {
+  profileId: string
+  extensions: BrowserSessionExtension[]
+  /** Open pages navigated again so a changed extension set actually applies to them. */
+  reloadedPages: number
+}
 export type BrowserProfileCreateResult = { profile: BrowserSessionProfile | null }
 export type BrowserProfileDeleteResult = { deleted: boolean; profileId: string }
 export type BrowserDetectedProfileInfo = { name: string; directory: string }

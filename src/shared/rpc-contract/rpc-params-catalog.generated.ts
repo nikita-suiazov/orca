@@ -51,6 +51,11 @@ import {
   AutomationUpdate
 } from './automation-params'
 import { CertificateProceed } from './browser-core-params'
+import {
+  ProfileExtensionList,
+  ProfileExtensionReload,
+  ProfileExtensionTarget
+} from './browser-extension-params'
 import { MouseClick } from './browser-extras-params'
 import { BrowserIdentitySet, ProfileCreate } from './browser-identity-params'
 import {
@@ -666,6 +671,10 @@ export const RPC_PARAMS_BY_METHOD = {
   'browser.profileCreate': ProfileCreate,
   'browser.profileDelete': ProfileDelete,
   'browser.profileDetectBrowsers': null,
+  'browser.profileExtensionAdd': ProfileExtensionTarget,
+  'browser.profileExtensionList': ProfileExtensionList,
+  'browser.profileExtensionReload': ProfileExtensionReload,
+  'browser.profileExtensionRemove': ProfileExtensionTarget,
   'browser.profileImportFromBrowser': ProfileImportFromBrowser,
   'browser.profileList': null,
   'browser.reload': BrowserTarget,

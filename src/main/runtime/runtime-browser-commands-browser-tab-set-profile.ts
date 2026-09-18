@@ -5,6 +5,7 @@ import type {
   BrowserDetectProfilesResult,
   BrowserProfileCreateResult,
   BrowserProfileDeleteResult,
+  BrowserProfileExtensionsResult,
   BrowserProfileListResult,
   BrowserTabProfileCloneResult,
   BrowserTabProfileShowResult,
@@ -17,6 +18,26 @@ import { randomUUID } from 'node:crypto'
 import { ipcMain } from 'electron'
 import { waitForTabRegistration } from '../ipc/browser-tab-registration-wait'
 import { detectInstalledBrowsers } from '../browser/browser-cookie-import'
+import {
+  addBrowserSessionProfileExtension,
+  listBrowserSessionProfileExtensions,
+  reloadBrowserSessionProfileExtensions,
+  removeBrowserSessionProfileExtension,
+  type BrowserSessionExtensionsResult
+} from '../browser/browser-session-profile-extensions'
+
+function settleProfileExtensions(
+  result: BrowserSessionExtensionsResult
+): BrowserProfileExtensionsResult {
+  if (!result.ok) {
+    throw new BrowserError('invalid_argument', result.reason)
+  }
+  return {
+    profileId: result.profileId,
+    extensions: result.extensions,
+    reloadedPages: result.reloadedPages
+  }
+}
 
 export class RuntimeBrowserCommandsWithBrowserTabSetProfile extends RuntimeBrowserCommandsWithBrowserTabCreate {
   async browserTabSetProfile(
@@ -168,6 +189,36 @@ export class RuntimeBrowserCommandsWithBrowserTabSetProfile extends RuntimeBrows
       deleted: await browserSessionRegistry.deleteProfile(params.profileId),
       profileId: params.profileId
     }
+  }
+
+  async browserProfileExtensionList(params: {
+    profileId: string
+  }): Promise<BrowserProfileExtensionsResult> {
+    return settleProfileExtensions(listBrowserSessionProfileExtensions(params.profileId))
+  }
+
+  async browserProfileExtensionAdd(params: {
+    profileId: string
+    directory: string
+  }): Promise<BrowserProfileExtensionsResult> {
+    return settleProfileExtensions(
+      await addBrowserSessionProfileExtension(params.profileId, params.directory)
+    )
+  }
+
+  async browserProfileExtensionRemove(params: {
+    profileId: string
+    directory: string
+  }): Promise<BrowserProfileExtensionsResult> {
+    return settleProfileExtensions(
+      await removeBrowserSessionProfileExtension(params.profileId, params.directory)
+    )
+  }
+
+  async browserProfileExtensionReload(params: {
+    profileId: string
+  }): Promise<BrowserProfileExtensionsResult> {
+    return settleProfileExtensions(await reloadBrowserSessionProfileExtensions(params.profileId))
   }
 
   async browserProfileDetectBrowsers(): Promise<BrowserDetectProfilesResult> {
